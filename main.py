@@ -1,20 +1,34 @@
-import os
-from src.filtros import process_crack_detection_pipeline
 import cv2
+import numpy as np
+from pathlib import Path
+from src.filtros import process_crack_detection_pipeline
 
-# Rutas de entrada y salida
-input_path = 'data/img/c.jpg'
-output_dir = 'data/output'
-output_path = os.path.join(output_dir, 'b_resultado.jpg')
+# Carpeta de entrada y salida
+carpeta_entrada = Path("data/img")
+carpeta_salida = Path("data/output")
+carpeta_salida.mkdir(exist_ok=True)
 
-# Crear carpeta de salida si no existe
-os.makedirs(output_dir, exist_ok=True)
+# Extensiones válidas
+extensiones_validas = [".jpg", ".png", ".jpeg"]
 
-# Ejecutar pipeline
-output_img, cracks = process_crack_detection_pipeline(input_path)
+# Procesamiento de imágenes
+for ruta_imagen in carpeta_entrada.glob("*"):
+    if ruta_imagen.suffix.lower() not in extensiones_validas:
+        continue
 
-# Guardar imagen con grietas resaltadas
-cv2.imwrite(output_path, output_img)
+    print(f"Procesando: {ruta_imagen.name}")
 
-print(f"Imagen procesada guardada en: {output_path}")
-print(f"Grietas detectadas: {len(cracks)}")
+    try:
+        # Desempaquetar tupla de salida
+        img_resultado, contornos = process_crack_detection_pipeline(str(ruta_imagen))
+
+        if isinstance(img_resultado, np.ndarray):
+            salida_path = carpeta_salida / f"resultado_{ruta_imagen.stem}.png"
+            cv2.imwrite(str(salida_path), img_resultado)
+        else:
+            print(f"⚠️ No se obtuvo una imagen válida para {ruta_imagen.name}")
+
+    except Exception as e:
+        print(f"❌ Error procesando {ruta_imagen.name}: {e}")
+
+print("✅ Procesamiento completado.")
